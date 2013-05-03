@@ -1,0 +1,9 @@
+/*
+ * This file is only used as a placeholder when in development mode.
+ * It gets replaced by the real thing in production.
+ */
+
+html {
+	/* Avoid flash while loading in development mode. */
+	background: white;
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Aurora</title>
+		<link href="./css/app.css" media="screen" rel="stylesheet" type="text/css" />
+		<embed style="position:absolute;top:-200px;" type="application/x-vnd-frida" id="frida">
+	</head>
+	<body>
+		<div data-view="app">
+		</div>
+
+		<script data-main="js/app" src="js/lib/require/require.js"></script>
+
+		<script id="partial-process-selector" type="text/x-beam-partial">
+			<div class="process-selector hero-unit">
+				<h1>Welcome!</h1>
+				<h4>Select a process to get started:</h4>
+				<form class="form-horizontal">
+					<div class="control-group">
+						<label class="control-label">Device</label>
+						<div class="controls">
+							<select data-view="devices"></select>
+						</div>
+					</div>
+					<div class="control-group">
+						<label class="control-label">Process</label>
+						<div class="controls">
+							<select data-view="processes"></select>
+						</div>
+					</div>
+					<div class="control-group">
+						<div class="controls">
+							<button class="btn btn-primary large" data-action="attach">Start</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</script>
+		<script id="partial-progress-indicator" type="text/x-beam-partial">
+			<div class="progress-indicator">
+				<div class="background">
+				</div>
+				<div class="globe" data-view="globe">
+				</div>
+				<div class="status well">
+					<p class="pull-left" data-bind="message"></p>
+					<button class="btn btn-danger pull-right" data-action="cancel">Cancel</button>
+				</div>
+				<div class="streams unstyled" data-view="streams">
+					<table data-view="content">
+						<tr>
+							<th>Stream</th>
+							<th>FD</th>
+							<th>Type</th>
+							<th>Peer</th>
+							<th>Bytes</th>
+							<th>Dropped</th>
+							<th></th>
+						</tr>
+					</table>
+				</div>
+				<ul class="preview unstyled" data-view="preview">
+				</ul>
+			</div>
+		</script>
+		<script id="partial-capture-stream" type="text/x-beam-partial">
+			<tr>
+				<td data-bind="id"></td>
+				<td data-bind="fd"></td>
+				<td data-bind="type"></td>
+				<td data-bind="peer"></td>
+				<td data-bind="bytes"></td>
+				<td data-bind="dropped"></td>
+				<td><button class="btn btn-mini" data-action="mute"><i class="icon-remove"></i> Mute</button></td>
+			</tr>
+		</script>
+		<script id="partial-preview-item" type="text/x-beam-partial">
+			<li>
+				<h3 data-bind="summary"></h3>
+				<div class="hex data pull-left" data-bind="hex-data"></div>
+				<div class="ascii data pull-right" data-bind="ascii-data"></div>
+			</li>
+		</script>
+	</body>
+</html>

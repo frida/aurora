@@ -1,0 +1,147 @@
+// CSS Reset
+@import "lib/bootstrap/reset.less";
+
+// Core variables and mixins
+@import "lib/bootstrap/variables.less";
+@import "lib/dd/variables.less";
+@import "lib/app/variables.less";
+@import "lib/bootstrap/mixins.less";
+
+// Grid system and page structure
+@import "lib/bootstrap/scaffolding.less";
+@import "lib/bootstrap/grid.less";
+@import "lib/bootstrap/layouts.less";
+
+// Base CSS
+@import "lib/bootstrap/type.less";
+@import "lib/bootstrap/code.less";
+@import "lib/bootstrap/forms.less";
+@import "lib/bootstrap/tables.less";
+
+// Components: common
+@import "lib/bootstrap/sprites.less";
+@import "lib/bootstrap/dropdowns.less";
+@import "lib/bootstrap/wells.less";
+@import "lib/bootstrap/component-animations.less";
+@import "lib/bootstrap/close.less";
+
+// Components: Buttons & Alerts
+@import "lib/bootstrap/buttons.less";
+@import "lib/bootstrap/button-groups.less";
+@import "lib/bootstrap/alerts.less"; // Note: alerts share common CSS with buttons and thus have styles in buttons.less
+
+// Components: Nav
+@import "lib/bootstrap/navs.less";
+@import "lib/bootstrap/navbar.less";
+@import "lib/bootstrap/breadcrumbs.less";
+@import "lib/bootstrap/pagination.less";
+@import "lib/bootstrap/pager.less";
+
+// Components: Popovers
+@import "lib/bootstrap/modals.less";
+@import "lib/bootstrap/tooltip.less";
+@import "lib/bootstrap/popovers.less";
+
+// Components: Misc
+@import "lib/bootstrap/thumbnails.less";
+@import "lib/bootstrap/labels-badges.less";
+@import "lib/bootstrap/progress-bars.less";
+@import "lib/bootstrap/accordion.less";
+@import "lib/bootstrap/carousel.less";
+@import "lib/bootstrap/hero-unit.less";
+
+// Utility classes
+@import "lib/bootstrap/utilities.less"; // Has to be last to override when necessary
+
+// msDropDown
+@import "lib/dd/dd.less";
+
+html {
+	cursor: default;
+	-webkit-font-smoothing: antialiased;
+	-webkit-user-select: none;
+	background: @white;
+}
+
+.process-selector {
+	position: absolute;
+	top: 100px;
+	left: 100px;
+}
+.progress-indicator {
+	position: absolute;
+	top: 100px;
+	left: 100px;
+	.background {
+		position: absolute;
+		top: -290px; left: 0px;
+		width: 1200px; height: 800px;
+		background-image: -webkit-gradient(radial, center center, 300, center center, 460, from(black), color-stop(80%, #CCC), color-stop(90%, #EEE), to(white));
+	}
+	.globe {
+		position: absolute;
+		top: -100px; left: 350px;
+		width: 500px; height: 500px;
+	}
+	.status {
+		position: absolute;
+		width: 392px;
+		height: 140px;
+	}
+	.streams {
+		position: absolute;
+		top: 60px;
+		left: 20px;
+		width: 390px;
+		height: 90px;
+		border: 1px solid #e3e3e3;
+		background-color: whiteSmoke;
+		overflow-y: scroll;
+
+		table {
+			width: 100%;
+		}
+		tr:nth-child(even) {
+			background-color: white;
+		}
+		th {
+			background-color: lightGray;
+		}
+		td {
+			text-align: center;
+			font-size: 11px;
+		}
+	}
+	.preview {
+		position: absolute;
+		top: 190px;
+		width: 300px;
+		opacity: 0.7;
+		li {
+			border: 1px solid #eee;
+			border-radius: 3px;
+			padding: 5px 15px;
+			margin-bottom: 2px;
+			width: 400px;
+			height: 75px;
+			background-color: #ccc;
+		}
+		h3 {
+			margin: 0;
+			padding: 0;
+			font-size: 12px;
+			line-height: 12px;
+		}
+		.data {
+			font-family: monospace;
+			font-size: 10px;
+			color: crimson;
+		}
+		.hex {
+			width: 285px;
+		}
+		.ascii {
+			width: 100px;
+		}
+	}
+}

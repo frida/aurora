@@ -1,0 +1,24 @@
+{
+  "name": "aurora",
+  "version": "1.0.0",
+  "description": "Aurora",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/frida/aurora"
+  },
+  "keywords": [
+    "frida"
+  ],
+  "author": "Ole André Vadla Ravnås",
+  "license": "GPL",
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "connect": "2.3.6",
+    "connect-xcors": "0.5.2",
+    "grunt": "0.3.x",
+    "grunt-requirejs": "0.2.x",
+    "jsdom": "~0.2.14",
+    "less": "~1.3.3",
+    "xmlhttprequest": "~1.4.2"
+  }
+}
