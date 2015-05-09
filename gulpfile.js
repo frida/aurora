@@ -1,11 +1,8 @@
 'use strict';
 
-var gulp = require('gulp');
 var del = require('del');
-
-
+var gulp = require('gulp');
 var path = require('path');
-
 
 // Load plugins
 var $ = require('gulp-load-plugins')();
@@ -78,18 +75,13 @@ gulp.task('buildScripts', function() {
         .pipe(gulp.dest('dist/scripts'));
 });
 
-
-
-
-    gulp.task('jade', function() {
-        return gulp.src('app/template/*.jade')
-            .pipe($.jade({
-                pretty: true
-            }))
-            .pipe(gulp.dest('dist'));
-    })
-
-
+gulp.task('jade', function() {
+    return gulp.src('app/template/*.jade')
+        .pipe($.jade({
+            pretty: true
+        }))
+        .pipe(gulp.dest('dist'));
+})
 
 // HTML
 gulp.task('html', function() {
@@ -186,10 +178,8 @@ gulp.task('watch', ['html', 'fonts', 'bundle'], function() {
 
     gulp.watch(['app/styles/**/*.scss', 'app/styles/**/*.css'], ['styles', reload]);
 
-    
-        // Watch .jade files
-        gulp.watch('app/template/**/*.jade', ['jade', 'html', reload]);
-    
+    // Watch .jade files
+    gulp.watch('app/template/**/*.jade', ['jade', 'html', reload]);
 
     // Watch image files
     gulp.watch('app/images/**/*', reload);
@@ -204,4 +194,4 @@ gulp.task('build', ['html', 'buildBundle', 'images', 'fonts', 'extras'], functio
 });
 
 // Default task
-gulp.task('default', ['clean', 'build'  , 'jest'  ]);
+gulp.task('default', ['clean', 'build']);
