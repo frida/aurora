@@ -51,8 +51,8 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
         @processes.children().remove()
         processes = processes.slice(0)
         processes.sort (a, b) ->
-          aHasIcon = a.small_icon?
-          bHasIcon = b.small_icon?
+          aHasIcon = a.smallIcon?
+          bHasIcon = b.smallIcon?
           if aHasIcon == bHasIcon
             a.name.toLowerCase().localeCompare(b.name.toLowerCase())
           else if aHasIcon
@@ -62,7 +62,7 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
         processes.forEach (process) =>
           entry = $("<option></option>")
           entry.attr('value', process.pid)
-          if (icon = process.small_icon)?
+          if (icon = process.smallIcon)?
             entry.attr("data-width", icon.width)
             entry.attr("data-height", icon.height)
             entry.attr("data-pixels", icon.pixels)
@@ -252,7 +252,7 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
       initialize: ->
         @view.onSelectedDeviceChanged(@_refreshProcesses)
 
-        @services.frida.addEventListener('devices-changed', @_refreshDevices)
+        @services.frida.on('devices-changed', @_refreshDevices)
         @_refreshDevices()
 
       _refreshDevices: =>

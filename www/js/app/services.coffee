@@ -4,24 +4,27 @@ define ["jquery", "beam/main"], ($, beam) ->
 
   class services.Frida extends beam.services.Service
     initialize: ->
-      @_plugin = $("#frida").get(0)
+      @_client = new Client()
       @capture = new Capture(this, @services.bus)
 
     start: ->
-      @_plugin.addEventListener('detach', @_onDetach)
-      @_plugin.addEventListener('message', @_onMessage)
+      @on('detached', @_onDetached)
+      @on('message', @_onMessage)
 
-    addEventListener: ->
-      @_plugin.addEventListener.apply(@_plugin, arguments)
+    on: ->
+      @_client.on.apply(@_client, arguments)
 
     enumerateDevices: ->
-      @_plugin.enumerateDevices.apply(@_plugin, arguments)
+      @_client.request('.enumerate-devices')
 
-    enumerateProcesses: ->
-      @_plugin.enumerateProcesses.apply(@_plugin, arguments)
+    enumerateProcesses: (deviceId) ->
+      @_client.request('.enumerate-processes', {
+        device:
+          id: deviceId
+      })
 
-    _onDetach: (device, pid) =>
-      @capture._onDetach(device, pid)
+    _onDetached: (device, pid) =>
+      @capture._onDetached(device, pid)
 
     _onMessage: (device, pid, message, data) =>
       @capture._onMessage(device, pid, message, data)
@@ -37,25 +40,29 @@ define ["jquery", "beam/main"], ($, beam) ->
         @_current =
           device: device
           pid: pid
-        rawScript = Capture.Script.toString()
-        rawBody = rawScript.substring(rawScript.indexOf("{") + 1, rawScript.lastIndexOf("return"))
-        @frida._plugin.attachTo(device, pid, rawBody)
+        @frida._client.request('.attach', {
+          device: device,
+          pid: pid
+        })
 
       close: (device, pid) ->
-        result = $.Deferred()
+        d = $.Deferred()
         if @_current?
           if device != @_current.device or pid != @_current.pid
             throw new Error("invalid device or pid")
-          @frida._plugin.detachFrom(device, pid).always =>
+          @frida._client.request('.detach', {
+            device: device,
+            pid: pid
+          }).always =>
             @_close()
-            result.resolve()
+            d.resolve()
         else
-          result.resolve()
-        result
+          d.resolve()
+        d
 
       pull: (fields) ->
-        @_postMessage({
-          type: 'streams:pull'
+        @frida._client.request('.post-message', {
+          type: 'streams:pull',
           payload: fields
         })
 
@@ -69,7 +76,7 @@ define ["jquery", "beam/main"], ($, beam) ->
             return stream
         return null
 
-      _onDetach: (device, pid) =>
+      _onDetached: (device, pid) =>
         if device == @_current?.device and pid == @_current?.pid
           for stream in @streams
             @_trigger('destroyed', stream)
@@ -144,172 +151,44 @@ define ["jquery", "beam/main"], ($, beam) ->
                 event: event
               }, this)
 
-      @Script: ->
-        streams = []
-        lastStreamId = 1
-        lastReadTimestamp = null
+  class Client
+    constructor: ->
+      @_pending = {}
+      @_nextRequestId = 1
 
-        createStream = (fd) ->
-          stream =
-            id: lastStreamId++
-            status: 'normal'
-            fd: fd
-            type: Socket.type(fd) or 'file'
-            localAddress: Socket.localAddress(fd)
-            peerAddress: Socket.peerAddress(fd)
-            stats:
-              read:
-                buffers: 0
-                bytes: 0
-              write:
-                buffers: 0
-                bytes: 0
-              drop:
-                buffers: 0
-                bytes: 0
-            dirty: false
-          streams.push(stream)
-          return stream
+      @_socket = io("http://localhost:3000/")
+      @_socket.on('stanza', @_onStanza)
 
-        findStreamById = (id) ->
-          for stream in streams
-            if stream.id == id
-              return stream
-          return null
+      @_listeners = {}
 
-        getStreamByFileDescriptor = (fd) ->
-          for stream in streams
-            if stream.fd == fd
-              return stream
-          stream = createStream(fd)
-          send({
-            type: 'streams:add'
-            payload:
-              id: stream.id
-              status: stream.status
-              fd: stream.fd
-              type: stream.type
-              localAddress: stream.localAddress
-              peerAddress: stream.peerAddress
-              stats: stream.stats
-          })
-          return stream
+    request: (name, payload = {}) ->
+      d = $.Deferred()
+      id = @_nextRequestId++
+      request =
+        id: id
+        name: name
+        payload: payload
+      @_pending[id] = d
+      @_socket.emit('stanza', request)
+      d
 
-        updateStream = (id, updates) ->
-          stream = findStreamById(id)
-          if stream?
-            for k, v of updates
-              stream[k] = v
-            allUpdates = {}
-            allUpdates[id] = updates
-            send({
-              type: 'streams:update'
-              payload: allUpdates
-            })
+    on: (event, callback) ->
+      listeners = @_listeners[event] or []
+      listeners.push(callback)
+      @_listeners[event] = listeners
 
-        receiveMute = ->
-          recv 'stream:mute', (message) ->
-            updateStream(message.stream_id, {
-              status: 'muted'
-            })
-            receiveMute()
-        receiveMute()
-
-        receivePull = ->
-          recv 'streams:pull', (message) ->
-            fields = message.payload
-            updates = {}
-            for stream in streams
-              if stream.status == 'muted' or not stream.dirty
-                continue
-              stream.dirty = false
-              u = {}
-              for field in fields
-                u[field] = stream[field]
-              updates[stream.id] = u
-            send({
-              type: 'streams:update'
-              payload: updates
-            })
-            receivePull()
-        receivePull()
-
-
-        AF_INET = 2
-        isWindows = false
-        netLibrary = 'libSystem.B.dylib'
-        connectImpl = Module.findExportByName(netLibrary, 'connect$UNIX2003')
-        if not connectImpl?
-          connectImpl = Module.findExportByName(netLibrary, 'connect')
-        if not connectImpl?
-          netLibrary = 'ws2_32.dll'
-          connectImpl = Module.findExportByName(netLibrary, 'connect')
-          isWindows = connectImpl?
-        if connectImpl?
-          Interceptor.attach connectImpl,
-            onEnter: (args) ->
-              sockAddr = args[1]
-              if isWindows
-                family = Memory.readU8(sockAddr)
-              else
-                family = Memory.readU8(sockAddr.add(1))
-              if family == AF_INET
-                fd = args[0].toInt32()
-                stream = getStreamByFileDescriptor(fd)
-                if stream.status != 'muted'
-                  ip =
-                    Memory.readU8(sockAddr.add(4)) + "." +
-                    Memory.readU8(sockAddr.add(5)) + "." +
-                    Memory.readU8(sockAddr.add(6)) + "." +
-                    Memory.readU8(sockAddr.add(7))
-                  port = (Memory.readU8(sockAddr.add(2)) << 8) | Memory.readU8(sockAddr.add(3))
-                  updateStream(stream.id, {
-                    peerAddress:
-                      ip: ip
-                      port: port
-                  })
-                  send({
-                    type: 'stream:event'
-                    stream_id: stream.id
-                    payload:
-                      type: 'connect'
-                      properties:
-                        ip: ip
-                        port: port
-                  })
-
-        readImpl = Module.findExportByName(netLibrary, 'read$UNIX2003')
-        if not readImpl?
-          readImpl = Module.findExportByName(netLibrary, 'read')
-        if readImpl?
-          Interceptor.attach readImpl,
-            onEnter: (args) ->
-              this.fd = args[0].toInt32()
-              this.buf = args[1]
-            onLeave: (retval) ->
-              if retval.toInt32() > 0
-                stream = getStreamByFileDescriptor(this.fd)
-                if stream.status != 'muted'
-                  now = new Date()
-                  if not lastReadTimestamp? or now - lastReadTimestamp >= 250
-                    send({
-                      type: 'stream:event'
-                      stream_id: stream.id
-                      payload:
-                        type: 'read'
-                        properties: {}
-                    }, Memory.readByteArray(this.buf, retval))
-                    lastReadTimestamp = now
-                  else
-                    drop = stream.stats.drop
-                    drop.buffers++
-                    drop.bytes += retval
-                  read = stream.stats.read
-                  read.buffers++
-                  read.bytes += retval
-                  stream.dirty = true
-
-        undefined
+    _onStanza: (stanza) =>
+      if (id = stanza.id)?
+        d = @_pending[id]
+        delete @_pending[id]
+        switch stanza.name
+          when '+result'
+            d.resolve(stanza.payload)
+          when '+error'
+            d.reject(stanza.payload)
+      else:
+        (listeners = @_listeners[stanza.name.substr(1)] or []).forEach (callback) ->
+          callback(stanza.payload)
 
 
   return services

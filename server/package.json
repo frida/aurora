@@ -1,0 +1,21 @@
+{
+  "name": "aurora-server",
+  "version": "1.0.0",
+  "description": "Aurora Server",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/frida/aurora"
+  },
+  "keywords": [
+    "frida"
+  ],
+  "author": "Ole André Vadla Ravnås",
+  "license": "WXwindows",
+  "readmeFilename": "../README.md",
+  "devDependencies": {},
+  "dependencies": {
+    "express": "^4.12.3",
+    "frida": "^4.0.1",
+    "socket.io": "^1.3.5"
+  }
+}
