@@ -118,18 +118,25 @@ receivePull();
 
 const AF_INET = 2;
 let isWindows = false;
-let netLibrary = 'libSystem.B.dylib';
-let connectImpl = Module.findExportByName(netLibrary, 'connect$UNIX2003');
-if (connectImpl == null) {
-  connectImpl = Module.findExportByName(netLibrary, 'connect');
+let netLibrary;
+
+let connectImpls = [];
+switch (Process.platform) {
+  case 'darwin':
+    netLibrary = "libSystem.B.dylib";
+    connectImpls.push(Module.findExportByName(netLibrary, "connect$UNIX2003"));
+    connectImpls.push(Module.findExportByName(netLibrary, "connect"));
+    break;
+  case 'windows':
+    isWindows = true;
+    netLibrary = "ws2_32.dll";
+    connectImpls.push(Module.findExportByName(netLibrary, "connect"));
+    break;
 }
-if (connectImpl == null) {
-  netLibrary = 'ws2_32.dll';
-  connectImpl = Module.findExportByName(netLibrary, 'connect');
-  isWindows = connectImpl != null;
-}
-if (connectImpl != null) {
-  Interceptor.attach(connectImpl, {
+connectImpls
+.filter(function (impl) { return impl !== null; })
+.forEach(function (impl) {
+  Interceptor.attach(impl, {
     onEnter: function (args) {
       const sockAddr = args[1];
       let family;
@@ -165,13 +172,15 @@ if (connectImpl != null) {
       }
     }
   });
-}
-let readImpl = Module.findExportByName(netLibrary, 'read$UNIX2003');
-if (readImpl == null) {
-  readImpl = Module.findExportByName(netLibrary, 'read');
-}
-if (readImpl != null) {
-  Interceptor.attach(readImpl, {
+});
+
+let readImpls = [];
+readImpls.push(Module.findExportByName(netLibrary, 'read$UNIX2003'));
+readImpls.push(Module.findExportByName(netLibrary, 'read'));
+readImpls
+.filter(function (impl) { return impl !== null; })
+.forEach(function (impl) {
+  Interceptor.attach(impl, {
     onEnter: function (args) {
       this.fd = args[0].toInt32();
       this.buf = args[1];
@@ -182,7 +191,7 @@ if (readImpl != null) {
         const stream = getStreamByFileDescriptor(this.fd);
         if (stream.status !== 'muted') {
           const now = Date.now();
-          if ((lastReadTimestamp == null) || now - lastReadTimestamp >= 250) {
+          if ((lastReadTimestamp === null) || now - lastReadTimestamp >= 250) {
             send({
               type: 'stream:event',
               stream_id: stream.id,
@@ -205,4 +214,4 @@ if (readImpl != null) {
       }
     }
   });
-}
+});

@@ -6,6 +6,7 @@ define ["jquery", "beam/main"], ($, beam) ->
     initialize: ->
       @_client = new Client()
       @capture = new Capture(this, @services.bus)
+      @geoip = new Geoip(this)
 
     start: ->
       @on('detached', @_onDetached)
@@ -150,6 +151,14 @@ define ["jquery", "beam/main"], ($, beam) ->
                 stream: this
                 event: event
               }, this)
+
+    class Geoip
+      constructor: (@frida) ->
+
+      lookup: (ip) ->
+        @frida._client.request('.lookup-ip', {
+          ip: ip
+        })
 
 
   class Client

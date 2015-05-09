@@ -1,6 +1,7 @@
 const app = require("express")();
 const frida = require("frida");
 const fs = require("fs");
+const geoip = require("geoip-lite");
 const http = require("http").Server(app);
 const io = require("socket.io")(http);
 const path = require("path");
@@ -86,12 +87,28 @@ handlers['.detach'] = function (payload) {
 };
 handlers['.post-message'] = function (message) {
   return new Promise(function (resolve, reject) {
-    if (current !== null) {
+    if (current !== null && current.script !== undefined) {
       current.script.postMessage(message)
       .then(resolve)
       .catch(reject);
     } else {
       reject(new Error("Not attached"));
+    }
+  });
+};
+handlers['.lookup-ip'] = function (payload) {
+  return new Promise(function (resolve, reject) {
+    console.log("resolving:", payload);
+    const geo = geoip.lookup(payload.ip);
+    console.log("geo:", geo);
+    const ll = (geo || {}).ll;
+    if (ll !== undefined) {
+      resolve({
+        latitude: ll[0],
+        longitude: ll[1]
+      });
+    } else {
+      reject(new Error("Not found"));
     }
   });
 };

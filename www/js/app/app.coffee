@@ -1,4 +1,4 @@
-define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "jquery.dd"], ($, beam, services, three, DAT) ->
+define ["jquery", "beam/main", "./services", "three", "three.extras", "three.raf", "three.detector", "globe", "lcss!css/app", "jquery.dd"], ($, beam, services, three, threeExtras, threeRaf, threeDetector, DAT) ->
   exports = {}
 
 
@@ -121,8 +121,9 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
           view.find("[data-bind='summary']").text("Stream #{item.stream.get('id')}: #{item.summary}")
           if item.data?
             data = new Uint8Array(item.data)
-            view.find("[data-bind='hex-data']").text(@_hexify(data))
-            view.find("[data-bind='ascii-data']").text(@_asciify(data))
+            if data.length > 0
+              view.find("[data-bind='hex-data']").text(@_hexify(data))
+              view.find("[data-bind='ascii-data']").text(@_asciify(data))
           @element.append(view)
 
         remove: (streamId) ->
@@ -383,7 +384,7 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
         _onAppended: (message, sender) =>
           if message.event.type == 'connect'
             properties = message.event.properties
-            $.getJSON("http://ospy.org:8008/geoip/json/#{properties.ip}").done (geo) =>
+            @services.frida.geoip.lookup(properties.ip).done (geo) =>
               @view.addConnectDataPoint(properties.ip, properties.port, geo.latitude, geo.longitude)
 
 
