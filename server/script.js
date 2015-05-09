@@ -102,7 +102,7 @@ function receivePull() {
       stream.dirty = false;
       const u = {};
       for (let j = 0, len1 = fields.length; j !== len1; j++) {
-        field = fields[j];
+        const field = fields[j];
         u[field] = stream[field];
       }
       updates[stream.id] = u;
@@ -174,10 +174,11 @@ if (readImpl != null) {
   Interceptor.attach(readImpl, {
     onEnter: function (args) {
       this.fd = args[0].toInt32();
-      return this.buf = args[1];
+      this.buf = args[1];
     },
     onLeave: function (retval) {
-      if (retval.toInt32() > 0) {
+      var numBytesRead = retval.toInt32();
+      if (numBytesRead > 0) {
         const stream = getStreamByFileDescriptor(this.fd);
         if (stream.status !== 'muted') {
           const now = Date.now();
@@ -189,17 +190,17 @@ if (readImpl != null) {
                 type: 'read',
                 properties: {}
               }
-            }, Memory.readByteArray(this.buf, retval));
+            }, Memory.readByteArray(this.buf, numBytesRead));
             lastReadTimestamp = now;
           } else {
             const drop = stream.stats.drop;
             drop.buffers++;
-            drop.bytes += retval;
+            drop.bytes += numBytesRead;
           }
           const read = stream.stats.read;
           read.buffers++;
-          read.bytes += retval;
-          return stream.dirty = true;
+          read.bytes += numBytesRead;
+          stream.dirty = true;
         }
       }
     }

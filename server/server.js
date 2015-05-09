@@ -1,7 +1,9 @@
 const app = require("express")();
 const frida = require("frida");
+const fs = require("fs");
 const http = require("http").Server(app);
 const io = require("socket.io")(http);
+const path = require("path");
 
 const deviceManager = frida.getDeviceManager();
 const handlers = {};
@@ -22,39 +24,48 @@ handlers['.attach'] = function (payload) {
   return new Promise(function (resolve, reject) {
     if (current === null) {
       current = {};
-      getDeviceById(payload.device)
-      .then(function (device) {
-        return device.attach(payload.pid);
-      })
-      .then(function (session) {
-        current.session = session;
-        return session.createScript(payload.source, {
-          name: "aurora"
+      fs.readFile(path.join(__dirname, "script.js"), {
+        encoding: 'utf-8',
+      }, function (err, source) {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        getDeviceById(payload.device)
+        .then(function (device) {
+          return device.attach(payload.pid);
+        })
+        .then(function (session) {
+          current.session = session;
+          return session.createScript(source, {
+            name: "aurora"
+          });
+        })
+        .then(function (script) {
+          current.script = script;
+          script.events.listen('message', onMessage);
+          return script.load();
+        })
+        .then(function () {
+          current.device = payload.device;
+          current.pid = payload.pid;
+          current.session.events.listen('detached', function () {
+            if (current !== null && current.device === payload.device && current.pid === payload.pid) {
+              current = null;
+            }
+            io.emit('detached', {});
+          });
+          resolve();
+        })
+        .catch(function (error) {
+          if (current.script !== undefined)
+            current.script.events.unlisten('message', onMessage);
+          if (current.session !== undefined)
+            current.session.detach();
+          current = null;
+          reject(error);
         });
-      })
-      .then(function (script) {
-        current.script = script;
-        script.events.listen('message', onMessage);
-        return script.load();
-      })
-      .then(function () {
-        current.device = payload.device;
-        current.pid = payload.pid;
-        current.session.events.listen('detached', function () {
-          if (current !== null && current.device === payload.device && current.pid === payload.pid) {
-            current = null;
-          }
-          io.emit('+detached', {});
-        });
-        resolve();
-      })
-      .catch(function (error) {
-        if (current.script !== undefined)
-          current.script.events.unlisten('message', onMessage);
-        if (current.session !== undefined)
-          current.session.detach();
-        current = null;
-        reject(error);
       });
     } else {
       reject(new Error("Already attached"));
@@ -86,8 +97,9 @@ handlers['.post-message'] = function (message) {
 };
 
 function onMessage(message, data) {
-  console.log("MESSAGE!", message, data);
-  io.emit('+message', {
+  io.emit('message', {
+    device: current.device,
+    pid: current.pid,
     message: message,
     data: data
   });

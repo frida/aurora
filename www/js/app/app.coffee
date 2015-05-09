@@ -120,8 +120,9 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
           view.attr('data-stream', item.stream.get('id'))
           view.find("[data-bind='summary']").text("Stream #{item.stream.get('id')}: #{item.summary}")
           if item.data?
-            view.find("[data-bind='hex-data']").text(@_hexify(item.data))
-            view.find("[data-bind='ascii-data']").text(@_asciify(item.data))
+            data = new Uint8Array(item.data)
+            view.find("[data-bind='hex-data']").text(@_hexify(data))
+            view.find("[data-bind='ascii-data']").text(@_asciify(data))
           @element.append(view)
 
         remove: (streamId) ->

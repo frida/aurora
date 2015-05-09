@@ -26,8 +26,8 @@ define ["jquery", "beam/main"], ($, beam) ->
     _onDetached: (device, pid) =>
       @capture._onDetached(device, pid)
 
-    _onMessage: (device, pid, message, data) =>
-      @capture._onMessage(device, pid, message, data)
+    _onMessage: (payload) =>
+      @capture._onMessage(payload.device, payload.pid, payload.message, payload.data)
 
     class Capture extends beam.Events
       initialize: (@frida, @bus) ->
@@ -84,7 +84,7 @@ define ["jquery", "beam/main"], ($, beam) ->
           @_trigger('closed', device, pid)
 
       _postMessage: (message) ->
-        @frida._plugin.postMessage(@_current.device, @_current.pid, message)
+        @frida._client.request('.post-message', message)
 
       _onMessage: (device, pid, transportMessage, data) =>
         if transportMessage.type == 'send'
@@ -151,6 +151,7 @@ define ["jquery", "beam/main"], ($, beam) ->
                 event: event
               }, this)
 
+
   class Client
     constructor: ->
       @_pending = {}
@@ -158,8 +159,6 @@ define ["jquery", "beam/main"], ($, beam) ->
 
       @_socket = io("http://localhost:3000/")
       @_socket.on('stanza', @_onStanza)
-
-      @_listeners = {}
 
     request: (name, payload = {}) ->
       d = $.Deferred()
@@ -173,9 +172,7 @@ define ["jquery", "beam/main"], ($, beam) ->
       d
 
     on: (event, callback) ->
-      listeners = @_listeners[event] or []
-      listeners.push(callback)
-      @_listeners[event] = listeners
+      @_socket.on(event, callback)
 
     _onStanza: (stanza) =>
       if (id = stanza.id)?
@@ -186,9 +183,6 @@ define ["jquery", "beam/main"], ($, beam) ->
             d.resolve(stanza.payload)
           when '+error'
             d.reject(stanza.payload)
-      else:
-        (listeners = @_listeners[stanza.name.substr(1)] or []).forEach (callback) ->
-          callback(stanza.payload)
 
 
   return services
