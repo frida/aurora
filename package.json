@@ -55,7 +55,8 @@
       ]
   },
   "browser": {
-      "jquery": "./app/bower_components/jquery/dist/jquery.js"
+      "jquery": "./app/bower_components/jquery/dist/jquery.js",
+      "jquery.dd": "./app/scripts/lib/jquery.dd.js"
   },
   "browserify-shim": {
       "jquery": "$"

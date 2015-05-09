@@ -1,8 +1,20 @@
+"use strict";
 
-var React = window.React = require('react'),
-    Timer = require("./ui/Timer"),
+var React = window.React = require("react"),
+    ProcessSelector = require("./ui/ProcessSelector"),
     mountNode = document.getElementById("app");
 
+const App = React.createClass({
+  render: function () {
+    return (
+      <ProcessSelector />
+    );
+  }
+});
+
+React.render(<App />, mountNode);
+
+/*
 var TodoList = React.createClass({
   render: function() {
     var createItem = function(itemText) {
@@ -38,7 +50,4 @@ var TodoApp = React.createClass({
     );
   }
 });
-
-
-React.render(<TodoApp />, mountNode);
-
+*/
