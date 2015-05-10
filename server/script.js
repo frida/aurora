@@ -1,6 +1,7 @@
 "use strict";
 
 const streams = [];
+const knownPeers = {};
 let lastStreamId = 1;
 let lastReadTimestamp = null;
 
@@ -157,7 +158,8 @@ connectImpls
               port: port
             }
           });
-          return send({
+          knownPeers[ip + ":" + port] = true;
+          send({
             type: 'stream:event',
             stream_id: stream.id,
             payload: {
@@ -192,6 +194,32 @@ readImpls
         if (stream.status !== 'muted') {
           const now = Date.now();
           if ((lastReadTimestamp === null) || now - lastReadTimestamp >= 250) {
+            const peerAddr = Socket.peerAddress(this.fd);
+            if (peerAddr !== null) {
+              const ip = peerAddr.ip;
+              const port = peerAddr.port;
+              const peerKey = ip + ":" + port;
+              if (knownPeers[peerKey] === undefined) {
+                updateStream(stream.id, {
+                  peerAddress: {
+                    ip: ip,
+                    port: port
+                  }
+                });
+                send({
+                  type: 'stream:event',
+                  stream_id: stream.id,
+                  payload: {
+                    type: 'connect',
+                    properties: {
+                      ip: ip,
+                      port: port
+                    }
+                  }
+                });
+                knownPeers[peerKey] = true;
+              }
+            }
             send({
               type: 'stream:event',
               stream_id: stream.id,
