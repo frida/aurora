@@ -108,6 +108,8 @@
 			 arrow = '<canvas data-option="' + aid + '" width="' + w + '" height="' + h + '"></canvas>';
 			 window.setTimeout(function() {
 				var canvas = $("#" + aid).find("canvas").get(0);
+				if (canvas === undefined)
+					return;
 				var ctx = canvas.getContext('2d');
 				var imageData = ctx.getImageData(0, 0, w, h);
 				var data = imageData.data;
@@ -216,8 +218,8 @@
 		var sText = "";
 		var arrow = "";
 		var usingCanvas = false;
-		if(getElement(elementid).options.length>0) {
-			var opt = $("#"+elementid+" option:selected");
+		if(element.options.length>0) {
+			var opt = $(element).find("option:selected");
 			sText = opt.text();
 			var pixels = opt.attr("data-pixels");
 			if (pixels) {
@@ -228,6 +230,8 @@
 				 arrow = '<canvas data-option="' + titleid + '" width="' + w + '" height="' + h + '"></canvas>';
 				 window.setTimeout(function() {
 					var canvas = $("#" + titleid).find("canvas").get(0);
+					if (canvas === undefined)
+						return;
 					var ctx = canvas.getContext('2d');
 					var imageData = ctx.getImageData(0, 0, w, h);
 					var data = imageData.data;
@@ -439,9 +443,8 @@
 	};
 	var addRefreshMethods = function (id) {
 		//deprecated
-		var objid = id;
-		getElement(objid).refresh = function(e) {
-			 $("#"+objid).msDropDown(options);
+		element.refresh = function(e) {
+			 $("#"+id).msDropDown(options);
 		};
 	};
 	var setInsideWindow = function (val) {
