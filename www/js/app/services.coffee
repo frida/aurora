@@ -9,11 +9,15 @@ define ["jquery", "beam/main"], ($, beam) ->
       @geoip = new Geoip(this)
 
     start: ->
+      @on('attached', @_onAttached)
       @on('detached', @_onDetached)
       @on('message', @_onMessage)
 
     on: ->
       @_client.on.apply(@_client, arguments)
+
+    off: ->
+      @_client.off.apply(@_client, arguments)
 
     enumerateDevices: ->
       @_client.request('.enumerate-devices')
@@ -24,8 +28,11 @@ define ["jquery", "beam/main"], ($, beam) ->
           id: deviceId
       })
 
-    _onDetached: (device, pid) =>
-      @capture._onDetached(device, pid)
+    _onAttached: (payload) =>
+      @capture._onAttached(payload.device, payload.pid)
+
+    _onDetached: (payload) =>
+      @capture._onDetached(payload.device, payload.pid)
 
     _onMessage: (payload) =>
       @capture._onMessage(payload.device, payload.pid, payload.message, payload.data)
@@ -76,6 +83,11 @@ define ["jquery", "beam/main"], ($, beam) ->
           if stream.get('id') == id
             return stream
         return null
+
+      _onAttached: (device, pid) =>
+        @_current =
+          device: device
+          pid: pid
 
       _onDetached: (device, pid) =>
         if device == @_current?.device and pid == @_current?.pid
@@ -167,6 +179,7 @@ define ["jquery", "beam/main"], ($, beam) ->
       @_nextRequestId = 1
 
       @_socket = io("http://localhost:3000/")
+      window.fridaSocket = @_socket
       @_socket.on('stanza', @_onStanza)
 
     request: (name, payload = {}) ->
@@ -180,8 +193,11 @@ define ["jquery", "beam/main"], ($, beam) ->
       @_socket.emit('stanza', request)
       d
 
-    on: (event, callback) ->
-      @_socket.on(event, callback)
+    on: (event, fn) ->
+      @_socket.on(event, fn)
+
+    off: (event, fn) ->
+      @_socket.off(event, fn)
 
     _onStanza: (stanza) =>
       if (id = stanza.id)?

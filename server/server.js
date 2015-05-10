@@ -9,6 +9,9 @@ const path = require("path");
 const deviceManager = frida.getDeviceManager();
 const handlers = {};
 var current = null;
+
+deviceManager.events.listen('changed', onDevicesChanged);
+
 handlers['.enumerate-devices'] = function () {
   return deviceManager.enumerateDevices();
 };
@@ -51,11 +54,18 @@ handlers['.attach'] = function (payload) {
         .then(function () {
           current.device = payload.device;
           current.pid = payload.pid;
+          io.emit('attached', {
+            device: payload.device,
+            pid: payload.pid
+          });
           current.session.events.listen('detached', function () {
             if (current !== null && current.device === payload.device && current.pid === payload.pid) {
               current = null;
             }
-            io.emit('detached', {});
+            io.emit('detached', {
+              device: payload.device,
+              pid: payload.pid
+            });
           });
           resolve();
         })
@@ -98,9 +108,7 @@ handlers['.post-message'] = function (message) {
 };
 handlers['.lookup-ip'] = function (payload) {
   return new Promise(function (resolve, reject) {
-    console.log("resolving:", payload);
     const geo = geoip.lookup(payload.ip);
-    console.log("geo:", geo);
     const ll = (geo || {}).ll;
     if (ll !== undefined) {
       resolve({
@@ -112,6 +120,10 @@ handlers['.lookup-ip'] = function (payload) {
     }
   });
 };
+
+function onDevicesChanged() {
+  io.emit('devices-changed', {});
+}
 
 function onMessage(message, data) {
   io.emit('message', {
@@ -137,6 +149,12 @@ app.get("/", function (req, res) {
 });
 
 io.on("connection", function (socket) {
+  if (current !== null && current.device !== undefined && current.pid !== undefined) {
+    io.emit('attached', {
+      device: current.device,
+      pid: current.pid
+    });
+  }
   socket.on('stanza', function (stanza) {
     const handler = handlers[stanza.name];
     if (handler !== undefined) {

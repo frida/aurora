@@ -216,6 +216,7 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
     reset: ->
       @processSelector = new ProcessSelector(this, @view.processSelector(), @services)
       @processSelector.onSelect(@_onSelect)
+      @processSelector.onAttach(@_onAttach)
       @progress = null
 
     _onSelect: (device, pid) =>
@@ -244,6 +245,21 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
           error: error
         })
 
+    _onAttach: (device, pid) =>
+      @processSelector.dispose()
+      @processSelector = null
+
+      @progress = new ProgressIndicator(this, @view.progressIndicator(), @services)
+      @progress.update({
+        state: 'attached'
+        pid: pid
+      })
+      @progress.onCancel =>
+        @services.frida.capture.close(device, pid).always =>
+          @progress.dispose()
+          @progress = null
+          @reset()
+
     _onClosed: (device, pid) =>
       @progress?.update({
         state: 'closed'
@@ -254,8 +270,15 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
       initialize: ->
         @view.onSelectedDeviceChanged(@_refreshProcesses)
 
+        @_onAttach = null
+        @services.frida.on('attached', @_onAttached)
         @services.frida.on('devices-changed', @_refreshDevices)
         @_refreshDevices()
+
+      dispose: ->
+        @services.frida.off('devices-changed', @_refreshDevices)
+        @services.frida.off('attached', @_onAttached)
+        super
 
       _refreshDevices: =>
         @view.setDevices([])
@@ -271,8 +294,14 @@ define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "
         request.fail (error) ->
           console.log(error)
 
+      _onAttached: (payload) =>
+        @_onAttach(payload.device, payload.pid)
+
       onSelect: (handler) ->
         @view.onSelect(handler)
+
+      onAttach: (handler) ->
+        @_onAttach = handler
 
     class ProgressIndicator extends beam.presenters.Presenter
       initialize: ->
