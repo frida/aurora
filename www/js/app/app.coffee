@@ -1,4 +1,4 @@
-define ["jquery", "beam/main", "./services", "three", "three.extras", "three.raf", "three.detector", "globe", "lcss!css/app", "jquery.dd"], ($, beam, services, three, threeExtras, threeRaf, threeDetector, DAT) ->
+define ["jquery", "beam/main", "./services", "three", "globe", "lcss!css/app", "jquery.dd"], ($, beam, services, three, DAT) ->
   exports = {}
 
 
